@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tus Caprichos Florales - Sistema Pro</title>
+    <style>
+        :root {
+            --primario: #d63384; /* Color floral Rosado */
+            --secundario: #3498db;
+            --exito: #27ae60;
+            --peligro: #e74c3c;
+            --fondo: #fceef5;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: var(--fondo); }
+        
+        /* Dashboard */
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .card-fin { background: white; padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid #ccc; }
+        .card-fin .monto { font-size: 1.5rem; font-weight: bold; margin-top: 5px; }
+        .border-ingreso { border-top-color: var(--secundario); }
+        .border-gasto { border-top-color: var(--peligro); }
+        .border-ganancia { border-top-color: var(--exito); }
+
+        .grid-main { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; }
+        .tarjeta { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+
+        .form-almacen { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background: #fff0f6; padding: 15px; border-radius: 10px; border: 1px solid #ffc1e3; margin-bottom: 20px; }
+        .form-group { display: flex; flex-direction: column; }
+        label { font-size: 11px; font-weight: bold; margin-bottom: 3px; color: var(--primario); text-transform: uppercase; }
+        input, select { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+
+        .btn { border: none; padding: 10px; border-radius: 6px; color: white; cursor: pointer; font-weight: bold; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-add { background: var(--primario); grid-column: span 2; }
+        .btn-vender { background: var(--exito); width: 100%; margin-top: 10px; font-size: 16px; }
+        .btn-ticket { background: var(--secundario); font-size: 11px; padding: 4px 8px; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 12px; color: #64748b; padding: 10px; border-bottom: 2px solid #f1f5f9; }
+        td { padding: 10px; border-bottom: 1px solid #f8fafc; font-size: 14px; }
+
+        .badge { padding: 3px 7px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+        .bg-verde { background: #dcfce7; color: #166534; }
+        .bg-rojo { background: #fee2e2; color: #991b1b; }
+
+        /* Estilos de Impresión */
+        #area-impresion { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #area-impresion, #area-impresion * { visibility: visible; }
+            #area-impresion { display: block; position: absolute; left: 0; top: 0; width: 100%; font-family: 'Courier New', monospace; font-size: 14px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1 style="color: var(--primario); text-align: center;">🌸 Tus Caprichos Florales 🌸</h1>
+
+    <div class="dashboard">
+        <div class="card-fin border-ingreso"><h3>Ingresos</h3><div id="total-ingresos" class="monto">S/ 0.00</div></div>
+        <div class="card-fin border-gasto"><h3>Inversión</h3><div id="total-gastos" class="monto">S/ 0.00</div></div>
+        <div class="card-fin border-ganancia"><h3>Ganancia Neta</h3><div id="total-ganancia" class="monto">S/ 0.00</div></div>
+    </div>
+
+    <div class="grid-main">
+        <div class="tarjeta">
+            <h2 id="titulo-form">📦 Almacén de Material</h2>
+            <div class="form-almacen">
+                <div class="form-group"><label>Nombre Flor</label><input type="text" id="f-nombre"></div>
+                <div class="form-group"><label>U x Paquete</label><input type="number" id="f-conv" value="12" oninput="autoCalcular()"></div>
+                <div class="form-group"><label>Stock Paquetes</label><input type="number" id="f-stock-p" value="0" oninput="autoCalcular()"></div>
+                <div class="form-group"><label>Total Unidades</label><input type="number" id="f-stock-u" value="0" readonly style="background:#f1f1f1;"></div>
+                
+                <div class="form-group"><label>Costo Unit.</label><input type="number" id="f-costo-u" step="0.1" value="0"></div>
+                <div class="form-group"><label>Venta Unit.</label><input type="number" id="f-venta-u" step="0.1" value="0"></div>
+                <div class="form-group"><label>Costo Paq.</label><input type="number" id="f-costo-p" step="0.1" value="0"></div>
+                <div class="form-group"><label>Venta Paq.</label><input type="number" id="f-venta-p" step="0.1" value="0"></div>
+                
+                <input type="hidden" id="f-id">
+                <button class="btn btn-add" id="btn-save" onclick="guardarProducto()">💾 Guardar Flor</button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr><th>Producto</th><th>Paq.</th><th>Unid.</th><th>Acciones</th></tr>
+                </thead>
+                <tbody id="tabla-almacen"></tbody>
+            </table>
+        </div>
+
+        <div class="tarjeta">
+            <h2>💸 Punto de Venta</h2>
+            <div style="background: #fff; border: 2px solid var(--primario); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                <label>Seleccionar Flor:</label>
+                <select id="v-id" style="width: 100%; margin: 8px 0; padding: 10px;"></select>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <input type="number" id="v-cant" value="1" min="1">
+                    <select id="v-tipo">
+                        <option value="u">Unidades</option>
+                        <option value="p">Paquetes</option>
+                    </select>
+                </div>
+                <button class="btn btn-vender" onclick="vender()">💰 Confirmar Venta</button>
+            </div>
+
+            <h3>Recibos Recientes</h3>
+            <div id="historial-ventas"></div>
+            <button class="btn" style="background:#64748b; margin-top:20px; width:100%" onclick="exportarExcel()">📊 Exportar todo a Excel</button>
+        </div>
+    </div>
+
+    <div id="area-impresion"></div>
+
+    <script>
+        let db = JSON.parse(localStorage.getItem('floreria_caprichos_db')) || {
+            ingresos: 0, costos: 0, inventario: [], ventas: []
+        };
+
+        const cashSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2017/2017-preview.mp3');
+
+        function autoCalcular() {
+            const uXP = parseInt(document.getElementById('f-conv').value) || 0;
+            const pStock = parseInt(document.getElementById('f-stock-p').value) || 0;
+            document.getElementById('f-stock-u').value = uXP * pStock;
+        }
+
+        function salvar() {
+            localStorage.setItem('floreria_caprichos_db', JSON.stringify(db));
+            render();
+        }
+
+        function guardarProducto() {
+            const id = document.getElementById('f-id').value;
+            const nombre = document.getElementById('f-nombre').value.trim();
+            if(!nombre) return alert("Nombre requerido");
+
+            const p = {
+                id: id ? parseInt(id) : Date.now(),
+                nombre: nombre,
+                conv: parseInt(document.getElementById('f-conv').value) || 0,
+                stock_p: parseInt(document.getElementById('f-stock-p').value) || 0,
+                stock_u: parseInt(document.getElementById('f-stock-u').value) || 0,
+                costo_u: parseFloat(document.getElementById('f-costo-u').value) || 0,
+                venta_u: parseFloat(document.getElementById('f-venta-u').value) || 0,
+                costo_p: parseFloat(document.getElementById('f-costo-p').value) || 0,
+                venta_p: parseFloat(document.getElementById('f-venta-p').value) || 0
+            };
+
+            const idx = db.inventario.findIndex(x => x.id === p.id);
+            if(idx > -1) db.inventario[idx] = p;
+            else db.inventario.push(p);
+
+            resetForm();
+            salvar();
+        }
+
+        function vender() {
+            const idSelect = document.getElementById('v-id').value;
+            if(!idSelect) return alert("Crea un producto primero");
+            
+            const id = parseInt(idSelect);
+            const cant = parseInt(document.getElementById('v-cant').value);
+            const tipo = document.getElementById('v-tipo').value;
+            const p = db.inventario.find(x => x.id === id);
+
+            let costoT = 0, ventaT = 0;
+
+            if(tipo === 'u') {
+                if(p.stock_u < cant) {
+                    if(p.stock_p > 0) {
+                        if(confirm("Sin unidades. ¿Abrir paquete?")) {
+                            p.stock_p--; p.stock_u += p.conv;
+                        } else return;
+                    } else return alert("Stock insuficiente");
+                }
+                p.stock_u -= cant;
+                costoT = p.costo_u * cant; ventaT = p.venta_u * cant;
+            } else {
+                if(p.stock_p < cant) return alert("Paquetes insuficientes");
+                p.stock_p -= cant; p.stock_u -= (cant * p.conv);
+                costoT = p.costo_p * cant; ventaT = p.venta_p * cant;
+            }
+
+            db.ingresos += ventaT;
+            db.costos += costoT;
+            db.ventas.unshift({
+                id: Date.now(),
+                fecha: new Date().toLocaleString(),
+                item: p.nombre,
+                cant: cant,
+                tipo: tipo === 'u' ? 'Unid' : 'Paq',
+                total: ventaT
+            });
+            cashSound.play();
+            salvar();
+        }
+
+        function imprimirTicket(id) {
+            const v = db.ventas.find(x => x.id === id);
+            const area = document.getElementById('area-impresion');
+            area.innerHTML = `
+                <br>
+                <strong>🌸 TUS CAPRICHOS FLORALES 🌸</strong><br>
+                Ticket de Venta<br>
+                --------------------------------<br>
+                Fecha: ${v.fecha}<br>
+                Producto: ${v.item}<br>
+                Cantidad: ${v.cant} ${v.tipo}<br>
+                --------------------------------<br>
+                <strong>TOTAL A PAGAR: S/ ${v.total.toFixed(2)}</strong><br>
+                --------------------------------<br>
+                ¡Gracias por su preferencia!<br>
+                <br><br>.
+            `;
+            window.print();
+        }
+
+        function render() {
+            document.getElementById('total-ingresos').innerText = `S/ ${db.ingresos.toFixed(2)}`;
+            document.getElementById('total-gastos').innerText = `S/ ${db.costos.toFixed(2)}`;
+            document.getElementById('total-ganancia').innerText = `S/ ${(db.ingresos - db.costos).toFixed(2)}`;
+
+            const tbody = document.getElementById('tabla-almacen');
+            tbody.innerHTML = db.inventario.map(p => `
+                <tr>
+                    <td><strong>${p.nombre}</strong></td>
+                    <td><span class="badge ${p.stock_p > 0 ? 'bg-verde' : 'bg-rojo'}">${p.stock_p}</span></td>
+                    <td><span class="badge ${p.stock_u > 0 ? 'bg-verde' : 'bg-rojo'}">${p.stock_u}</span></td>
+                    <td>
+                        <button onclick="editar(${p.id})" style="border:none; cursor:pointer; background:none;">✏️</button>
+                        <button onclick="eliminar(${p.id})" style="border:none; cursor:pointer; background:none;">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('v-id').innerHTML = db.inventario.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+            
+            document.getElementById('historial-ventas').innerHTML = db.ventas.slice(0, 5).map(v => `
+                <div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                    <span><b>${v.item}</b> (S/ ${v.total})</span>
+                    <button class="btn btn-ticket" onclick="imprimirTicket(${v.id})">🎫 Recibo</button>
+                </div>
+            `).join('');
+        }
+
+        function editar(id) {
+            const p = db.inventario.find(x => x.id === id);
+            document.getElementById('f-id').value = p.id;
+            document.getElementById('f-nombre').value = p.nombre;
+            document.getElementById('f-conv').value = p.conv;
+            document.getElementById('f-stock-p').value = p.stock_p;
+            document.getElementById('f-stock-u').value = p.stock_u;
+            document.getElementById('f-costo-u').value = p.costo_u;
+            document.getElementById('f-venta-u').value = p.venta_u;
+            document.getElementById('f-costo-p').value = p.costo_p;
+            document.getElementById('f-venta-p').value = p.venta_p;
+            document.getElementById('btn-save').innerText = "💾 Actualizar Flor";
+            document.getElementById('titulo-form').innerText = "✏️ Editando Flor";
+        }
+
+        function eliminar(id) { if(confirm("¿Eliminar?")) { db.inventario = db.inventario.filter(x => x.id !== id); salvar(); } }
+
+        function exportarExcel() {
+            let csv = "\ufeffREPORTE TUS CAPRICHOS FLORALES\n\n";
+            csv += "BALANCES,MONTO\nIngresos,S/ " + db.ingresos.toFixed(2) + "\nGastos,S/ " + db.costos.toFixed(2) + "\n\n";
+            csv += "PRODUCTO,PAQUETES,UNIDADES,PRECIO UNIT,PRECIO PAQ\n";
+            db.inventario.forEach(p => {
+                csv += `"${p.nombre}",${p.stock_p},${p.stock_u},${p.venta_u},${p.venta_p}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", "Reporte_Tus_Caprichos_Florales.csv");
+            link.click();
+        }
+        
+        function resetForm() {
+            document.getElementById('f-id').value = "";
+            document.getElementById('f-nombre').value = "";
+            document.getElementById('btn-save').innerText = "💾 Guardar Material";
+            document.getElementById('titulo-form').innerText = "📦 Almacén de Material";
+        }
+
+        render();
+    </script>
+</body>
+</html>
